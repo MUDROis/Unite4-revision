@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Le Grand Voyage Linguistique 🇫🇷</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --success: #16a34a;
+      --error: #dc2626;
+      --bg: #f0f9ff;
+      --card: #ffffff;
+      --text: #1e293b;
+      --accent: #f59e0b;
+      --border: #cbd5e1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+    body { background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+    .container { background: var(--card); border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 650px; width: 100%; overflow: hidden; display: flex; flex-direction: column; }
+    header { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 20px; text-align: center; }
+    header h1 { font-size: 1.6rem; margin-bottom: 5px; }
+    header p { font-size: 0.95rem; opacity: 0.9; }
+    .progress-bar { height: 6px; background: #e2e8f0; width: 100%; }
+    .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.4s ease; }
+    .content { padding: 25px; flex: 1; display: flex; flex-direction: column; }
+    .question { font-size: 1.25rem; font-weight: 600; margin-bottom: 20px; line-height: 1.4; }
+    .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+    .option-btn { background: #f8fafc; border: 2px solid var(--border); padding: 14px; border-radius: 12px; cursor: pointer; text-align: left; font-size: 1rem; transition: all 0.2s; color: var(--text); }
+    .option-btn:hover:not(:disabled) { background: #e0f2fe; border-color: #38bdf8; transform: translateY(-1px); }
+    .option-btn.selected { background: #dbeafe; border-color: var(--primary); }
+    .option-btn.correct { background: #dcfce7; border-color: var(--success); color: var(--success); }
+    .option-btn.wrong { background: #fee2e2; border-color: var(--error); color: var(--error); }
+    .input-field { width: 100%; padding: 14px; font-size: 1rem; border: 2px solid var(--border); border-radius: 12px; margin-bottom: 15px; outline: none; transition: border 0.2s; }
+    .input-field:focus { border-color: var(--primary); }
+    .btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; transition: all 0.2s; margin-top: 10px; }
+    .btn:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-1px); }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+    .btn.next { background: #64748b; }
+    .feedback { margin-top: 15px; padding: 14px; border-radius: 10px; display: none; line-height: 1.4; }
+    .feedback.show { display: block; animation: fadeIn 0.3s ease; }
+    .feedback.correct { background: #dcfce7; color: #14532d; border-left: 4px solid var(--success); }
+    .feedback.wrong { background: #fee2e2; color: #7f1d1d; border-left: 4px solid var(--error); }
+    .stamps { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 25px; justify-content: center; padding-top: 15px; border-top: 2px dashed #e2e8f0; }
+    .stamp { font-size: 1.8rem; opacity: 0.15; transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); transform: scale(0.7); }
+    .stamp.collected { opacity: 1; transform: scale(1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+    .final-screen { text-align: center; padding: 40px 20px; display: none; }
+    .final-screen h2 { color: var(--success); font-size: 1.8rem; margin-bottom: 10px; }
+    .final-screen p { font-size: 1.1rem; color: #475569; margin-bottom: 20px; }
+    .restart-btn { background: var(--accent); margin-top: 10px; }
+    .restart-btn:hover { background: #d97706; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🌍 Le Grand Voyage Linguistique</h1>
+      <p>Collect 12 passport stamps! A1 French Revision (Year 4 / Age 10)</p>
+    </header>
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    
+    <div class="content" id="game-area">
+      <div class="question" id="question-text"></div>
+      <div id="interaction-area"></div>
+      <button class="btn" id="submit-btn" onclick="checkAnswer()">Submit Answer ✅</button>
+      <button class="btn next" id="next-btn" style="display:none;" onclick="nextQuestion()">Next Station ➡️</button>
+      <div class="feedback" id="feedback"></div>
+      <div class="stamps" id="stamps-display"></div>
+    </div>
+
+    <div class="final-screen" id="final-screen">
+      <h2>🎉 Bravo, Explorer!</h2>
+      <p>You've collected all 12 stamps! Your French is ready for take-off. ✈️🇫🇷</p>
+      <button class="btn restart-btn" onclick="restartGame()">Play Again 🔄</button>
+    </div>
+  </div>
+
+  <script>
+    // Content strictly aligned with the provided Knowledge Organiser
+    const questions = [
+      { type: 'mc', q: '🌤️ Which French phrase means "It is raining"?', options: ['Il fait chaud', 'Il pleut', 'Il neige', 'Il fait du vent'], correct: 1, stamp: '🌧️' },
+      { type: 'mc', q: '📅 "Juillet est en ___?" (Which season?)', options: ['l\'hiver', 'le printemps', 'l\'été', 'l\'automne'], correct: 2, stamp: '☀️' },
+      { type: 'mc', q: '✈️ "Je vais ___ France." (feminine country → en)', options: ['au', 'en', 'à', 'dans'], correct: 1, stamp: '🇫🇷' },
+      { type: 'mc', q: '🧳 How do you say "by bike" in French?', options: ['en train', 'à vélo', 'en voiture', 'à pied'], correct: 1, stamp: '🚲' },
+      { type: 'fill', q: '👨‍👩‍👧‍👦 Complete: "Je vais en vacances ___ ma sœur." (with)', answer: 'avec', stamp: '👧' },
+      { type: 'mc', q: '⚽ True or False? "Ma sport préféré est le football." is grammatically correct.', options: ['True', 'False'], correct: 1, explanation: 'Sport is masculine → should be "Mon sport préféré"', stamp: '⚽' },
+      { type: 'mc', q: '❄️ Which follows the French capitalisation rule for months?', options: ['J\'aime Janvier.', 'j\'aime janvier.', 'J\'aime janvier.'], correct: 2, explanation: 'Months are lowercase in French unless at the start of a sentence.', stamp: '🔍' },
+      { type: 'mc', q: '🎨 Which word means "reading" in French?', options: ['la danse', 'la lecture', 'le dessin', 'le chant'], correct: 1, stamp: '📖' },
+      { type: 'mc', q: '🌍 "Aujourd\'hui au Canada, il fait moins trois degrés. Il ___."', options: ['fait chaud', 'pleut', 'neige', 'fait du vent'], correct: 2, explanation: '-3°C means it\'s cold and snowy (il neige).', stamp: '🇨🇦' },
+      { type: 'mc', q: '💬 What is the correct question to ask about the weather?', options: ['Quel temps est-il?', 'Quel temps fait-il?', 'Comment est le temps?', 'Il fait quel temps?'], correct: 1, stamp: '💬' },
+      { type: 'mc', q: '🧩 Choose the correct possessive for "___ saison préférée" (feminine noun).', options: ['mon', 'ma', 'mes'], correct: 1, explanation: 'Use "ma" with feminine singular nouns.', stamp: '🧩' },
+      { type: 'fill', q: '🎲 Final: Type a country + preposition from the game (e.g., au Canada / en France / au Portugal / en Écosse)', answers: ['au canada','en france','au portugal','en écosse','au pays de galles','en belgique'], stamp: '✈️', flexible: true }
+    ];
+
+    let currentQ = 0;
+    let selectedOption = -1;
+    let stampsCollected = Array(questions.length).fill(false);
+
+    function init() {
+      renderStamps();
+      loadQuestion();
+    }
+
+    function renderStamps() {
+      const container = document.getElementById('stamps-display');
+      container.innerHTML = '';
+      questions.forEach((q, i) => {
+        const s = document.createElement('div');
+        s.className = 'stamp' + (stampsCollected[i] ? ' collected' : '');
+        s.textContent = q.stamp;
+        container.appendChild(s);
+      });
+    }
+
+    function loadQuestion() {
+      const q = questions[currentQ];
+      document.getElementById('question-text').textContent = `${currentQ + 1}. ${q.q}`;
+      document.getElementById('progress').style.width = `${(currentQ / questions.length) * 100}%`;
+      
+      const fb = document.getElementById('feedback');
+      fb.className = 'feedback';
+      fb.textContent = '';
+      document.getElementById('submit-btn').style.display = 'block';
+      document.getElementById('next-btn').style.display = 'none';
+      document.getElementById('submit-btn').disabled = false;
+      selectedOption = -1;
+
+      const area = document.getElementById('interaction-area');
+      area.innerHTML = '';
+
+      if (q.type === 'mc' || q.type === 'tf') {
+        const opts = q.options;
+        const div = document.createElement('div');
+        div.className = 'options';
+        opts.forEach((opt, i) => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.textContent = opt;
+          btn.onclick = () => selectOption(i);
+          div.appendChild(btn);
+        });
+        area.appendChild(div);
+      } else {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'input-field';
+        input.placeholder = 'Type your answer here...';
+        input.id = 'text-input';
+        input.autocomplete = 'off';
+        area.appendChild(input);
+      }
+    }
+
+    function selectOption(index) {
+      selectedOption = index;
+      document.querySelectorAll('.option-btn').forEach((btn, i) => {
+        btn.classList.toggle('selected', i === index);
+      });
+    }
+
+    function checkAnswer() {
+      const q = questions[currentQ];
+      let isCorrect = false;
+
+      if (q.type === 'mc' || q.type === 'tf') {
+        if (selectedOption === -1) return alert('Please select an option first!');
+        isCorrect = selectedOption === q.correct;
+      } else if (q.type === 'fill') {
+        const val = document.getElementById('text-input').value.trim().toLowerCase();
+        if (!val) return alert('Please type an answer!');
+        if (q.flexible) {
+          isCorrect = q.answers.some(a => val === a);
+        } else {
+          isCorrect = val === q.answer.toLowerCase();
+        }
+      }
+
+      const fb = document.getElementById('feedback');
+      fb.classList.add('show');
+      fb.className = `feedback show ${isCorrect ? 'correct' : 'wrong'}`;
+      fb.textContent = isCorrect ? '✅ Correct! Stamp collected.' : `❌ Not quite. ${q.explanation || 'Review the KO rule and try again next time!'}`;
+
+      if (isCorrect) {
+        stampsCollected[currentQ] = true;
+        renderStamps();
+      }
+
+      document.getElementById('submit-btn').style.display = 'none';
+      document.getElementById('next-btn').style.display = 'block';
+      document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+      if (document.getElementById('text-input')) document.getElementById('text-input').disabled = true;
+    }
+
+    function nextQuestion() {
+      currentQ++;
+      if (currentQ < questions.length) {
+        loadQuestion();
+      } else {
+        document.getElementById('game-area').style.display = 'none';
+        document.getElementById('final-screen').style.display = 'block';
+        document.getElementById('progress').style.width = '100%';
+      }
+    }
+
+    function restartGame() {
+      currentQ = 0;
+      stampsCollected = Array(questions.length).fill(false);
+      document.getElementById('game-area').style.display = 'flex';
+      document.getElementById('final-screen').style.display = 'none';
+      renderStamps();
+      loadQuestion();
+    }
+
+    // Allow Enter key to submit text answers
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && document.activeElement.id === 'text-input' && document.getElementById('submit-btn').style.display !== 'none') {
+        checkAnswer();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
